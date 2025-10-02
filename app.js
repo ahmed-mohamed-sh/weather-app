@@ -1,17 +1,6 @@
-// استخدم environment variable إذا متوفر، وإلا استخدم الـ API key الافتراضي
-const getApiKey = () => {
-    // للاستخدام في Vercel مع environment variables
-    if (typeof process !== 'undefined' && process.env && process.env.VITE_WEATHER_API_KEY) {
-        return process.env.VITE_WEATHER_API_KEY;
-    }
-    // للاستخدام في المتصفح
-    return '9505fd1df737e20152fbd78cdb289b6a';
-};
+let id = '9505fd1df737e20152fbd78cdb289b6a';
+let baseUrl = 'https://api.openweathermap.org/data/2.5/weather?units=metric&appid=' + id;
 
-let id = getApiKey();
-let baseUrl = 'https://api.openweathermap.org/data/2.5/weather?units=metric&appid=';
-
-// انتظر حتى يتم تحميل DOM بالكامل
 document.addEventListener('DOMContentLoaded', function() {
     let city = document.querySelector('.name');
     let form = document.querySelector("form");
@@ -23,98 +12,62 @@ document.addEventListener('DOMContentLoaded', function() {
     let pressure = document.getElementById('pressure');
     let main = document.querySelector('main');
 
-    // تحقق من وجود جميع العناصر
-    if (!form || !valueSearch || !main) {
-        console.error('عناصر DOM المطلوبة غير موجودة!');
-        return;
-    }
-
     form.addEventListener("submit", (e) => {
         e.preventDefault();  
-        let searchValue = valueSearch.value.trim();
-        if(searchValue !== ''){
-            searchWeather(searchValue);
+        if(valueSearch.value.trim() != ''){
+            searchWeather();
         }
     });
 
-    const searchWeather = (cityName) => {
-        // إظهار حالة التحميل
-        main.classList.add('loading');
-        
-        fetch(baseUrl + id + '&q=' + encodeURIComponent(cityName))
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
+    const searchWeather = () => {
+        fetch(baseUrl + '&q=' + encodeURIComponent(valueSearch.value))
+            .then(response => response.json())
             .then(data => {
                 console.log(data);
-                
-                if(data.cod === 200){
+                if(data.cod == 200){
                     // تحديث اسم المدينة والعلم
-                    if (city) {
-                        const figcaption = city.querySelector('figcaption');
-                        const flagImg = city.querySelector('img');
-                        if (figcaption) figcaption.textContent = data.name;
-                        if (flagImg) {
-                            flagImg.src = `https://flagsapi.com/${data.sys.country}/shiny/32.png`;
-                            flagImg.alt = `علم ${data.sys.country}`;
-                        }
-                    }
+                    city.querySelector('figcaption').innerHTML = data.name;
+                    city.querySelector('img').src = `https://flagsapi.com/${data.sys.country}/shiny/32.png`;
                     
                     // تحديث درجة الحرارة والأيقونة
-                    if (temperature) {
-                        const tempImg = temperature.querySelector('img');
-                        const tempSpan = temperature.querySelector('span');
-                        if (tempImg) {
-                            tempImg.src = `https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`;
-                            tempImg.alt = data.weather[0].description;
-                        }
-                        if (tempSpan) {
-                            tempSpan.textContent = Math.round(data.main.temp);
-                        }
-                    }
+                    temperature.querySelector('img').src = `https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`;
+                    temperature.querySelector('span').innerText = Math.round(data.main.temp);
                     
                     // تحديث الوصف
-                    if (description) {
-                        description.textContent = data.weather[0].description;
-                    }
-                    
+                    description.innerText = data.weather[0].description;
+
                     // تحديث التفاصيل
-                    if (clouds) clouds.textContent = data.clouds.all + '%';
-                    if (humidity) humidity.textContent = data.main.humidity + '%';
-                    if (pressure) pressure.textContent = data.main.pressure + ' hPa';
+                    clouds.innerText = data.clouds.all;
+                    humidity.innerText = data.main.humidity;
+                    pressure.innerText = data.main.pressure;
                     
-                    // إزالة رسالة الخطأ إذا كانت موجودة
-                    main.classList.remove('error');
+                    // إزالة الخطأ إذا كان موجوداً
+                    if(main.classList.contains('error')) {
+                        main.classList.remove('error');
+                    }
                 } else {
-                    throw new Error(data.message || 'City not found');
+                    // إظهار الخطأ
+                    main.classList.add('error');
+                    setTimeout(() => {
+                        main.classList.remove('error');
+                    }, 3000);
                 }
+                valueSearch.value = '';
             })
             .catch(error => {
-                console.error('Error fetching weather:', error);
+                console.error('Error:', error);
                 main.classList.add('error');
-                
-                // إظهار رسالة الخطأ لفترة أطول
                 setTimeout(() => {
                     main.classList.remove('error');
                 }, 3000);
-            })
-            .finally(() => {
-                // إزالة حالة التحميل
-                main.classList.remove('loading');
-                valueSearch.value = '';
             });
     }
 
-    // البحث الافتراضي
+    // بحث افتراضي
     const initApp = () => {
-        if (valueSearch) {
-            valueSearch.value = 'London';
-            searchWeather('London');
-        }
+        valueSearch.value = 'London';
+        searchWeather();
     }
-
+    
     initApp();
 });
