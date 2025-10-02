@@ -115,3 +115,25 @@ main.error{
         transform: translate(0, 0); 
     }
 }
+.loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.loading::after {
+    content: 'جاري التحميل...';
+    display: block;
+    text-align: center;
+    color: #666;
+}
+
+.error {
+    border: 2px solid #ff4444;
+    animation: shake 0.5s;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
